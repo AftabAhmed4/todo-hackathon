@@ -1,0 +1,499 @@
+openapi: 3.0.3
+info:
+  title: MCP Tools Specification
+  description: |
+    MCP (Model Context Protocol) tool schemas for todo management operations.
+    These tools are invoked by the AI agent to perform database operations.
+  version: 1.0.0
+
+components:
+  schemas:
+    # Create Todo Tool
+    CreateTodoInput:
+      type: object
+      required:
+        - user_id
+        - title
+      properties:
+        user_id:
+          type: integer
+          description: User ID (for authorization and data scoping)
+          example: 1
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Todo title
+          example: "Buy groceries"
+        description:
+          type: string
+          maxLength: 2000
+          description: Optional todo description
+          example: "Milk, eggs, bread"
+        status:
+          type: string
+          enum: [pending, in_progress, completed]
+          default: pending
+          description: Initial todo status
+          example: "pending"
+
+    CreateTodoOutput:
+      type: object
+      required:
+        - id
+        - title
+        - status
+        - created_at
+      properties:
+        id:
+          type: integer
+          description: Created todo ID
+          example: 42
+        title:
+          type: string
+          description: Todo title
+          example: "Buy groceries"
+        description:
+          type: string
+          description: Todo description
+          example: "Milk, eggs, bread"
+        status:
+          type: string
+          description: Todo status
+          example: "pending"
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+          example: "2026-02-05T23:45:00Z"
+
+    # List Todos Tool
+    ListTodosInput:
+      type: object
+      required:
+        - user_id
+      properties:
+        user_id:
+          type: integer
+          description: User ID (for authorization and data scoping)
+          example: 1
+        status:
+          type: string
+          enum: [pending, in_progress, completed]
+          description: Optional status filter
+          example: "pending"
+
+    ListTodosOutput:
+      type: object
+      required:
+        - todos
+        - total
+      properties:
+        todos:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                example: 42
+              title:
+                type: string
+                example: "Buy groceries"
+              description:
+                type: string
+                example: "Milk, eggs, bread"
+              status:
+                type: string
+                example: "pending"
+              created_at:
+                type: string
+                format: date-time
+                example: "2026-02-05T23:45:00Z"
+              updated_at:
+                type: string
+                format: date-time
+                example: "2026-02-05T23:45:00Z"
+        total:
+          type: integer
+          description: Total number of todos matching filter
+          example: 3
+
+    # Update Todo Tool
+    UpdateTodoInput:
+      type: object
+      required:
+        - user_id
+        - todo_id
+      properties:
+        user_id:
+          type: integer
+          description: User ID (for authorization)
+          example: 1
+        todo_id:
+          type: integer
+          description: Todo ID to update
+          example: 42
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: New todo title (optional)
+          example: "Buy groceries and cook dinner"
+        description:
+          type: string
+          maxLength: 2000
+          description: New todo description (optional)
+          example: "Milk, eggs, bread, chicken"
+        status:
+          type: string
+          enum: [pending, in_progress, completed]
+          description: New todo status (optional)
+          example: "in_progress"
+
+    UpdateTodoOutput:
+      type: object
+      required:
+        - id
+        - title
+        - status
+        - updated_at
+      properties:
+        id:
+          type: integer
+          description: Updated todo ID
+          example: 42
+        title:
+          type: string
+          description: Updated todo title
+          example: "Buy groceries and cook dinner"
+        description:
+          type: string
+          description: Updated todo description
+          example: "Milk, eggs, bread, chicken"
+        status:
+          type: string
+          description: Updated todo status
+          example: "in_progress"
+        updated_at:
+          type: string
+          format: date-time
+          description: Update timestamp
+          example: "2026-02-05T23:50:00Z"
+
+    # Delete Todo Tool
+    DeleteTodoInput:
+      type: object
+      required:
+        - user_id
+        - todo_id
+      properties:
+        user_id:
+          type: integer
+          description: User ID (for authorization)
+          example: 1
+        todo_id:
+          type: integer
+          description: Todo ID to delete
+          example: 42
+
+    DeleteTodoOutput:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+          description: Whether deletion was successful
+          example: true
+        message:
+          type: string
+          description: Confirmation message
+          example: "Todo deleted successfully"
+        deleted_id:
+          type: integer
+          description: ID of deleted todo
+          example: 42
+
+    # Complete Todo Tool
+    CompleteTodoInput:
+      type: object
+      required:
+        - user_id
+        - todo_id
+      properties:
+        user_id:
+          type: integer
+          description: User ID (for authorization)
+          example: 1
+        todo_id:
+          type: integer
+          description: Todo ID to mark as completed
+          example: 42
+
+    CompleteTodoOutput:
+      type: object
+      required:
+        - id
+        - status
+        - updated_at
+      properties:
+        id:
+          type: integer
+          description: Completed todo ID
+          example: 42
+        title:
+          type: string
+          description: Todo title
+          example: "Buy groceries"
+        status:
+          type: string
+          description: Updated status (always "completed")
+          example: "completed"
+        updated_at:
+          type: string
+          format: date-time
+          description: Completion timestamp
+          example: "2026-02-05T23:55:00Z"
+
+    # Error Response
+    ToolError:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              enum:
+                - INVALID_INPUT
+                - UNAUTHORIZED
+                - NOT_FOUND
+                - DATABASE_ERROR
+              description: Error code
+              example: "NOT_FOUND"
+            message:
+              type: string
+              description: Human-readable error message
+              example: "Todo not found or you do not have permission to access it"
+
+# MCP Tool Definitions
+tools:
+  create_todo:
+    name: create_todo
+    description: |
+      Create a new todo item for the user.
+      Extracts todo title and optional description from natural language.
+    input_schema:
+      $ref: '#/components/schemas/CreateTodoInput'
+    output_schema:
+      oneOf:
+        - $ref: '#/components/schemas/CreateTodoOutput'
+        - $ref: '#/components/schemas/ToolError'
+    examples:
+      - name: Create simple todo
+        input:
+          user_id: 1
+          title: "Buy groceries"
+        output:
+          id: 42
+          title: "Buy groceries"
+          status: "pending"
+          created_at: "2026-02-05T23:45:00Z"
+      - name: Create todo with description
+        input:
+          user_id: 1
+          title: "Finish report"
+          description: "Q4 financial report with charts"
+          status: "in_progress"
+        output:
+          id: 43
+          title: "Finish report"
+          description: "Q4 financial report with charts"
+          status: "in_progress"
+          created_at: "2026-02-05T23:46:00Z"
+
+  list_todos:
+    name: list_todos
+    description: |
+      List all todos for the user, optionally filtered by status.
+      Returns todos in reverse chronological order (newest first).
+    input_schema:
+      $ref: '#/components/schemas/ListTodosInput'
+    output_schema:
+      oneOf:
+        - $ref: '#/components/schemas/ListTodosOutput'
+        - $ref: '#/components/schemas/ToolError'
+    examples:
+      - name: List all todos
+        input:
+          user_id: 1
+        output:
+          todos:
+            - id: 43
+              title: "Finish report"
+              description: "Q4 financial report"
+              status: "in_progress"
+              created_at: "2026-02-05T23:46:00Z"
+              updated_at: "2026-02-05T23:46:00Z"
+            - id: 42
+              title: "Buy groceries"
+              status: "pending"
+              created_at: "2026-02-05T23:45:00Z"
+              updated_at: "2026-02-05T23:45:00Z"
+          total: 2
+      - name: List pending todos only
+        input:
+          user_id: 1
+          status: "pending"
+        output:
+          todos:
+            - id: 42
+              title: "Buy groceries"
+              status: "pending"
+              created_at: "2026-02-05T23:45:00Z"
+              updated_at: "2026-02-05T23:45:00Z"
+          total: 1
+
+  update_todo:
+    name: update_todo
+    description: |
+      Update an existing todo's title, description, or status.
+      At least one field (title, description, or status) must be provided.
+    input_schema:
+      $ref: '#/components/schemas/UpdateTodoInput'
+    output_schema:
+      oneOf:
+        - $ref: '#/components/schemas/UpdateTodoOutput'
+        - $ref: '#/components/schemas/ToolError'
+    examples:
+      - name: Update todo title
+        input:
+          user_id: 1
+          todo_id: 42
+          title: "Buy groceries and cook dinner"
+        output:
+          id: 42
+          title: "Buy groceries and cook dinner"
+          status: "pending"
+          updated_at: "2026-02-05T23:50:00Z"
+      - name: Update todo status
+        input:
+          user_id: 1
+          todo_id: 42
+          status: "in_progress"
+        output:
+          id: 42
+          title: "Buy groceries"
+          status: "in_progress"
+          updated_at: "2026-02-05T23:51:00Z"
+
+  delete_todo:
+    name: delete_todo
+    description: |
+      Delete a todo item permanently.
+      User must own the todo to delete it.
+    input_schema:
+      $ref: '#/components/schemas/DeleteTodoInput'
+    output_schema:
+      oneOf:
+        - $ref: '#/components/schemas/DeleteTodoOutput'
+        - $ref: '#/components/schemas/ToolError'
+    examples:
+      - name: Delete todo successfully
+        input:
+          user_id: 1
+          todo_id: 42
+        output:
+          success: true
+          message: "Todo deleted successfully"
+          deleted_id: 42
+      - name: Delete non-existent todo
+        input:
+          user_id: 1
+          todo_id: 999
+        output:
+          error:
+            code: "NOT_FOUND"
+            message: "Todo not found or you do not have permission to access it"
+
+  complete_todo:
+    name: complete_todo
+    description: |
+      Mark a todo as completed.
+      Shortcut for updating status to "completed".
+    input_schema:
+      $ref: '#/components/schemas/CompleteTodoInput'
+    output_schema:
+      oneOf:
+        - $ref: '#/components/schemas/CompleteTodoOutput'
+        - $ref: '#/components/schemas/ToolError'
+    examples:
+      - name: Complete todo successfully
+        input:
+          user_id: 1
+          todo_id: 42
+        output:
+          id: 42
+          title: "Buy groceries"
+          status: "completed"
+          updated_at: "2026-02-05T23:55:00Z"
+      - name: Complete already completed todo
+        input:
+          user_id: 1
+          todo_id: 42
+        output:
+          id: 42
+          title: "Buy groceries"
+          status: "completed"
+          updated_at: "2026-02-05T23:55:00Z"
+
+# Tool Authorization Rules
+authorization:
+  description: |
+    All MCP tools require user authentication and authorization.
+    Tools validate that the user_id in the request matches the authenticated user.
+    Tools enforce user-scoped data access - users can only access their own todos.
+
+  rules:
+    - User must be authenticated (JWT token validated)
+    - user_id parameter must match authenticated user ID
+    - Todo operations are scoped to user's todos only
+    - Attempting to access another user's todos returns NOT_FOUND error
+
+# Tool Implementation Guidelines
+implementation:
+  stateless_requirement: |
+    All MCP tools MUST be stateless:
+    - No global variables or class-level state
+    - No in-memory caching of user data
+    - Each tool invocation is independent
+    - Database connection via connection pool (not persistent connection)
+
+  error_handling: |
+    Tools should return structured errors:
+    - INVALID_INPUT: Invalid parameters (empty title, invalid status, etc.)
+    - UNAUTHORIZED: user_id doesn't match authenticated user
+    - NOT_FOUND: Todo doesn't exist or user doesn't have access
+    - DATABASE_ERROR: Database operation failed
+
+  database_operations: |
+    All tools interact with database via SQLModel:
+    - Use parameterized queries (SQL injection prevention)
+    - Enforce user_id filtering on all queries
+    - Use transactions for multi-step operations
+    - Handle database errors gracefully
+
+  validation: |
+    Input validation requirements:
+    - user_id: Must be positive integer
+    - todo_id: Must be positive integer
+    - title: 1-500 characters, not empty
+    - description: 0-2000 characters
+    - status: Must be one of [pending, in_progress, completed]

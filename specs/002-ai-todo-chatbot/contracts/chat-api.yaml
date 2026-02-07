@@ -1,0 +1,414 @@
+openapi: 3.0.3
+info:
+  title: Todo AI Chatbot API
+  description: |
+    Chat endpoint for AI-powered todo management.
+    Users interact with an AI assistant through natural language to manage their todos.
+  version: 1.0.0
+  contact:
+    name: Todo App Team
+
+servers:
+  - url: http://localhost:8001
+    description: Local development server
+  - url: https://api.todo-app.example.com
+    description: Production server
+
+tags:
+  - name: Chat
+    description: AI chatbot conversation endpoints
+
+paths:
+  /api/chat:
+    post:
+      tags:
+        - Chat
+      summary: Send message to AI chatbot
+      description: |
+        Send a natural language message to the AI assistant.
+        The assistant interprets the message, performs appropriate todo operations,
+        and returns a conversational response.
+
+        If conversation_id is provided, continues existing conversation.
+        If omitted, creates a new conversation.
+      operationId: sendChatMessage
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+            examples:
+              new_conversation:
+                summary: Start new conversation
+                value:
+                  message: "Add a task to buy groceries"
+              continue_conversation:
+                summary: Continue existing conversation
+                value:
+                  message: "What are my tasks?"
+                  conversation_id: 123
+      responses:
+        '200':
+          description: AI assistant response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+              examples:
+                create_todo_response:
+                  summary: Todo created successfully
+                  value:
+                    conversation_id: 123
+                    response: "I've added 'Buy groceries' to your todo list."
+                    created_at: "2026-02-05T23:45:00Z"
+                list_todos_response:
+                  summary: List todos response
+                  value:
+                    conversation_id: 123
+                    response: "You have 3 tasks:\n1. Buy groceries (pending)\n2. Call dentist (pending)\n3. Finish report (completed)"
+                    created_at: "2026-02-05T23:46:00Z"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                empty_message:
+                  summary: Empty message
+                  value:
+                    detail: "Message cannot be empty"
+                message_too_long:
+                  summary: Message exceeds length limit
+                  value:
+                    detail: "Message cannot exceed 1000 characters"
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                unauthorized:
+                  summary: Missing authentication
+                  value:
+                    detail: "Could not validate credentials"
+        '403':
+          description: Forbidden - conversation belongs to another user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                forbidden:
+                  summary: Access denied
+                  value:
+                    detail: "You do not have permission to access this conversation"
+        '404':
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                not_found:
+                  summary: Invalid conversation ID
+                  value:
+                    detail: "Conversation not found"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                server_error:
+                  summary: AI service error
+                  value:
+                    detail: "An error occurred while processing your request"
+
+  /api/conversations:
+    get:
+      tags:
+        - Chat
+      summary: List user's conversations
+      description: |
+        Get a list of all conversations for the authenticated user,
+        ordered by most recently updated.
+      operationId: listConversations
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of conversations to return
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          description: Number of conversations to skip (for pagination)
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationList'
+              examples:
+                success:
+                  summary: User conversations
+                  value:
+                    conversations:
+                      - id: 123
+                        title: "Todo management"
+                        created_at: "2026-02-05T10:00:00Z"
+                        updated_at: "2026-02-05T23:45:00Z"
+                      - id: 122
+                        title: "Task planning"
+                        created_at: "2026-02-04T15:30:00Z"
+                        updated_at: "2026-02-04T16:00:00Z"
+                    total: 2
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/conversations/{conversation_id}:
+    get:
+      tags:
+        - Chat
+      summary: Get conversation with message history
+      description: |
+        Retrieve a specific conversation with its full message history.
+        Only the conversation owner can access it.
+      operationId: getConversation
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: conversation_id
+          in: path
+          required: true
+          description: Conversation ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Conversation with messages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationHistory'
+              examples:
+                success:
+                  summary: Conversation details
+                  value:
+                    conversation:
+                      id: 123
+                      title: "Todo management"
+                      created_at: "2026-02-05T10:00:00Z"
+                      updated_at: "2026-02-05T23:45:00Z"
+                    messages:
+                      - id: 1
+                        role: "user"
+                        content: "Add a task to buy groceries"
+                        created_at: "2026-02-05T10:00:00Z"
+                      - id: 2
+                        role: "assistant"
+                        content: "I've added 'Buy groceries' to your todo list."
+                        created_at: "2026-02-05T10:00:05Z"
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - not conversation owner
+        '404':
+          description: Conversation not found
+
+    delete:
+      tags:
+        - Chat
+      summary: Delete conversation
+      description: |
+        Delete a conversation and all its messages.
+        Only the conversation owner can delete it.
+      operationId: deleteConversation
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: conversation_id
+          in: path
+          required: true
+          description: Conversation ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Conversation deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Conversation deleted successfully"
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - not conversation owner
+        '404':
+          description: Conversation not found
+
+components:
+  schemas:
+    ChatRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          description: User's natural language message
+          example: "Add a task to buy groceries"
+        conversation_id:
+          type: integer
+          description: Existing conversation ID (optional for new conversation)
+          example: 123
+
+    ChatResponse:
+      type: object
+      required:
+        - conversation_id
+        - response
+        - created_at
+      properties:
+        conversation_id:
+          type: integer
+          description: Conversation ID (new or existing)
+          example: 123
+        response:
+          type: string
+          description: AI assistant's natural language response
+          example: "I've added 'Buy groceries' to your todo list."
+        created_at:
+          type: string
+          format: date-time
+          description: Response timestamp (ISO 8601 format, UTC)
+          example: "2026-02-05T23:45:00Z"
+
+    ConversationPublic:
+      type: object
+      required:
+        - id
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          description: Conversation unique identifier
+          example: 123
+        title:
+          type: string
+          description: Conversation title (auto-generated from first message)
+          example: "Todo management"
+        created_at:
+          type: string
+          format: date-time
+          description: Conversation creation timestamp
+          example: "2026-02-05T10:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Last message timestamp
+          example: "2026-02-05T23:45:00Z"
+
+    ConversationList:
+      type: object
+      required:
+        - conversations
+        - total
+      properties:
+        conversations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConversationPublic'
+        total:
+          type: integer
+          description: Total number of conversations
+          example: 2
+
+    MessagePublic:
+      type: object
+      required:
+        - id
+        - role
+        - content
+        - created_at
+      properties:
+        id:
+          type: integer
+          description: Message unique identifier
+          example: 1
+        role:
+          type: string
+          enum: [user, assistant]
+          description: Message sender role
+          example: "user"
+        content:
+          type: string
+          description: Message text content
+          example: "Add a task to buy groceries"
+        created_at:
+          type: string
+          format: date-time
+          description: Message timestamp
+          example: "2026-02-05T10:00:00Z"
+
+    ConversationHistory:
+      type: object
+      required:
+        - conversation
+        - messages
+      properties:
+        conversation:
+          $ref: '#/components/schemas/ConversationPublic'
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/MessagePublic'
+          description: Messages in chronological order
+
+    ErrorResponse:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          type: string
+          description: Human-readable error message
+          example: "Message cannot be empty"
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token obtained from /api/auth/signin or /api/auth/signup endpoints.
+        Include in Authorization header as: Bearer <token>
+
+security:
+  - BearerAuth: []

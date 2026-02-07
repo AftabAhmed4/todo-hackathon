@@ -1,0 +1,278 @@
+openapi: 3.0.3
+info:
+  title: Todo App Authentication API
+  description: |
+    Authentication endpoints for the Todo Web Application.
+    Provides user registration (signup) and login (signin) with JWT token issuance.
+  version: 1.0.0
+  contact:
+    name: Todo App Team
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+  - url: https://api.todo-app.example.com
+    description: Production server
+
+tags:
+  - name: Authentication
+    description: User authentication operations (signup, signin)
+
+paths:
+  /api/auth/signup:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user account
+      description: |
+        Creates a new user account with email and password credentials.
+        Validates email format and password requirements.
+        Returns JWT token on successful registration.
+      operationId: signup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+            examples:
+              valid:
+                summary: Valid signup request
+                value:
+                  email: user@example.com
+                  password: SecurePass123
+      responses:
+        '201':
+          description: User account created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+              examples:
+                success:
+                  summary: Successful signup
+                  value:
+                    user:
+                      id: 1
+                      email: user@example.com
+                      created_at: "2026-01-09T12:00:00Z"
+                    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                    message: Account created successfully
+          headers:
+            Set-Cookie:
+              description: JWT token stored in httpOnly cookie
+              schema:
+                type: string
+                example: token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; HttpOnly; Secure; SameSite=Strict; Max-Age=86400
+        '400':
+          description: Invalid request (validation error)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_email:
+                  summary: Invalid email format
+                  value:
+                    detail: Invalid email format
+                duplicate_email:
+                  summary: Email already registered
+                  value:
+                    detail: Email already registered
+                weak_password:
+                  summary: Password doesn't meet requirements
+                  value:
+                    detail: Password must be at least 8 characters with uppercase, lowercase, and number
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                server_error:
+                  summary: Database connection error
+                  value:
+                    detail: Service temporarily unavailable
+
+  /api/auth/signin:
+    post:
+      tags:
+        - Authentication
+      summary: Authenticate an existing user
+      description: |
+        Authenticates a user with email and password credentials.
+        Returns JWT token on successful authentication.
+        Error messages are generic to prevent user enumeration.
+      operationId: signin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SigninRequest'
+            examples:
+              valid:
+                summary: Valid signin request
+                value:
+                  email: user@example.com
+                  password: SecurePass123
+      responses:
+        '200':
+          description: User authenticated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+              examples:
+                success:
+                  summary: Successful signin
+                  value:
+                    user:
+                      id: 1
+                      email: user@example.com
+                      created_at: "2026-01-09T12:00:00Z"
+                    token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                    message: Signed in successfully
+          headers:
+            Set-Cookie:
+              description: JWT token stored in httpOnly cookie
+              schema:
+                type: string
+                example: token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; HttpOnly; Secure; SameSite=Strict; Max-Age=86400
+        '401':
+          description: Authentication failed (invalid credentials)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalid_credentials:
+                  summary: Invalid email or password
+                  value:
+                    detail: Invalid email or password
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                server_error:
+                  summary: Database connection error
+                  value:
+                    detail: Service temporarily unavailable
+
+components:
+  schemas:
+    SignupRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          description: User's email address (must be unique)
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 128
+          description: |
+            User's password. Must meet security requirements:
+            - Minimum 8 characters
+            - At least one uppercase letter
+            - At least one lowercase letter
+            - At least one number
+          example: SecurePass123
+
+    SigninRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          description: User's registered email address
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          description: User's password
+          example: SecurePass123
+
+    AuthResponse:
+      type: object
+      required:
+        - user
+        - token
+        - message
+      properties:
+        user:
+          $ref: '#/components/schemas/UserPublic'
+        token:
+          type: string
+          description: JWT token for authentication (also set in httpOnly cookie)
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJlbWFpbCI6InVzZXJAZXhhbXBsZS5jb20iLCJleHAiOjE3MDQ4NDQ4MDAsImlhdCI6MTcwNDc1ODQwMH0.signature
+        message:
+          type: string
+          description: Success message
+          example: Account created successfully
+
+    UserPublic:
+      type: object
+      required:
+        - id
+        - email
+        - created_at
+      properties:
+        id:
+          type: integer
+          description: User's unique identifier
+          example: 1
+        email:
+          type: string
+          format: email
+          description: User's email address
+          example: user@example.com
+        created_at:
+          type: string
+          format: date-time
+          description: Account creation timestamp (ISO 8601 format, UTC)
+          example: "2026-01-09T12:00:00Z"
+
+    ErrorResponse:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          type: string
+          description: Human-readable error message
+          example: Invalid email format
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token obtained from signup or signin endpoints.
+        Include in Authorization header as: Bearer <token>
+
+        Token payload structure:
+        {
+          "user_id": 123,
+          "email": "user@example.com",
+          "exp": 1704844800,
+          "iat": 1704758400
+        }
+
+security: []  # Authentication endpoints are public (no security required)

@@ -31,7 +31,25 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+### Required Gate Verification
+
+- [ ] **Spec-Driven Workflow**: Feature implementation will follow Spec-Kit Plus → Claude Code → Tasks → Implementation workflow. No manual coding.
+- [ ] **Database Isolation**: All database operations use SQLModel with user-scoped queries via foreign key. No direct frontend-to-database access.
+- [ ] **JWT Authentication**: All API endpoints secured with JWT tokens. Better Auth issues tokens, backend verifies using BETTER_AUTH_SECRET.
+- [ ] **API Contract**: Endpoints match defined contract (/api/{user_id}/tasks/*). No divergence from specified paths.
+- [ ] **Frontend Auth State**: Frontend handles auth state, API client automatically attaches JWT tokens. UI reflects only authenticated user data.
+- [ ] **Monorepo Structure**: Implementation fits in frontend/ and backend/ folders. Spec-Kit files at root or /specs.
+- [ ] **No Hardcoded Secrets**: All secrets and DB URLs via environment variables. No hardcoded values in code.
+- [ ] **Production Quality**: Code is reviewable, production-grade. No placeholder logic, mock auth, or insecure shortcuts.
+
+### Complexity Tracking Justification
+
+> **Fill ONLY if Constitution Check has violations that must be justified**
+
+| Violation | Why Needed | Simpler Alternative Rejected Because |
+|-----------|------------|-------------------------------------|
+| [e.g., custom auth flow] | [current need] | [why standard JWT insufficient] |
+| [e.g., shared task model] | [specific problem] | [why user-scoped isolation insufficient] |
 
 ## Project Structure
 

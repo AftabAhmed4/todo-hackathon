@@ -11,11 +11,5 @@
       "src": "/(.*)",
       "dest": "main.py"
     }
-  ],
-  "env": {
-    "DATABASE_URL": "@database_url",
-    "BETTER_AUTH_SECRET": "@better_auth_secret",
-    "GEMINI_API_KEY": "@gemini_api_key",
-    "FRONTEND_URL": "https://todo-hackathon-frontend-phi.vercel.app"
-  }
+  ]
 }

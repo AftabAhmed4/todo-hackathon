@@ -9,6 +9,8 @@ import os
 import time
 import logging
 from db import create_db_and_tables
+from dotenv import load_dotenv
+load_dotenv()  # Load environment variables from .env file
 
 # Configure logging
 logging.basicConfig(

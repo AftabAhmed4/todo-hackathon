@@ -6,16 +6,31 @@
 
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth';
 
 export default function Header() {
   const { isAuthenticated, user, logout } = useAuth();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // Get user initials for avatar
   const getUserInitials = () => {
     if (!user?.email) return 'U';
     return user.email.charAt(0).toUpperCase();
+  };
+
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+  };
+
+  const handleLogoutConfirm = () => {
+    setShowLogoutModal(false);
+    logout();
+  };
+
+  const handleLogoutCancel = () => {
+    setShowLogoutModal(false);
   };
 
   return (
@@ -65,7 +80,7 @@ export default function Header() {
 
                   {/* Logout Button */}
                   <button
-                    onClick={logout}
+                    onClick={handleLogoutClick}
                     className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
                     title="Logout"
                   >
@@ -97,6 +112,51 @@ export default function Header() {
           </div>
         </div>
       </nav>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={handleLogoutCancel}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6 sm:p-8">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="flex items-center justify-center w-12 h-12 bg-orange-100 rounded-full">
+                  <svg className="w-6 h-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900">
+                  Logout Confirmation
+                </h3>
+              </div>
+
+              <p className="text-gray-600 mb-6 leading-relaxed">
+                Are you sure you want to logout? You will need to sign in again to access your tasks.
+              </p>
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={handleLogoutCancel}
+                  className="px-5 py-2.5 text-sm font-semibold text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleLogoutConfirm}
+                  className="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-red-600 to-red-700 rounded-lg hover:from-red-700 hover:to-red-800 shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                >
+                  Yes, Logout
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }

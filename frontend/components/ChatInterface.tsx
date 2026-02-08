@@ -21,6 +21,7 @@ export default function ChatInterface({ conversationId: initialConversationId }:
   const [conversationId, setConversationId] = useState<number | undefined>(initialConversationId);
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Load conversation history if conversationId is provided
   useEffect(() => {
@@ -33,6 +34,11 @@ export default function ChatInterface({ conversationId: initialConversationId }:
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Auto-focus input field on mount
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   const loadConversationHistory = async () => {
     if (!conversationId) return;
@@ -164,6 +170,7 @@ export default function ChatInterface({ conversationId: initialConversationId }:
       <form onSubmit={handleSendMessage} className="px-6 py-4 border-t border-gray-200">
         <div className="flex space-x-2">
           <input
+            ref={inputRef}
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}

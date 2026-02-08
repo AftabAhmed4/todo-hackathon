@@ -65,7 +65,10 @@ async function apiRequest<T>(
   });
 
   // Handle 401 Unauthorized (expired or invalid token)
-  if (response.status === 401) {
+  // Skip session expiration handling for auth endpoints (signin/signup)
+  const isAuthEndpoint = endpoint.includes('/auth/signin') || endpoint.includes('/auth/signup');
+
+  if (response.status === 401 && !isAuthEndpoint) {
     removeToken();
     if (typeof window !== 'undefined') {
       window.location.href = '/signin?error=session_expired';

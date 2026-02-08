@@ -11,7 +11,7 @@ from datetime import datetime
 
 from db import get_session
 from models import Conversation, Message, MessageRole, User
-from agent import run_agent
+from agent import run_agent  # Using native Google Generative AI SDK
 from auth import get_current_user
 
 
@@ -120,7 +120,7 @@ def chat(
         session.commit()
         session.refresh(user_message)
 
-        # Run agent with conversation context
+        # Run agent with conversation context (native Google Generative AI SDK)
         agent_result = run_agent(
             user_id=user_id,
             messages=message_history
